@@ -93,14 +93,19 @@ void BNEEPTEstimator::radianceAlongRay(
 	//
 	for(uint32 numBounces = 0; numBounces < MAX_RAY_BOUNCES; numBounces++)
 	{
+		bool canDoMis = false;
+
 		// direct light sample
 		{
 			Vector3R         L;
 			real             directPdfW;
 			SpectralStrength emittedRadiance;
-			if(TDirectLightEstimator<ESaPolicy::STRICT>(&scene).sample(
+
+			canDoMis = TDirectLightEstimator<ESaPolicy::STRICT>(&scene).sample(
 				surfaceHit, ray.getTime(),
-				&L, &directPdfW, &emittedRadiance))
+				&L, &directPdfW, &emittedRadiance);
+
+			if(canDoMis)
 			{
 				const PrimitiveMetadata* metadata        = surfaceHit.getDetail().getPrimitive()->getMetadata();
 				const SurfaceBehavior&   surfaceBehavior = metadata->getSurface();
@@ -186,10 +191,10 @@ void BNEEPTEstimator::radianceAlongRay(
 				break;
 			}
 
+			// FIXME: this is dangerous... setting metadata to new hit point
 			metadata = Xe.getDetail().getPrimitive()->getMetadata();
-			surfaceBehavior = &(metadata->getSurface());
 
-			const Emitter* emitter = surfaceBehavior->getEmitter();
+			const Emitter* emitter = metadata->getSurface().getEmitter();
 			if(emitter)
 			{
 				SpectralStrength radianceLe;
@@ -199,10 +204,9 @@ void BNEEPTEstimator::radianceAlongRay(
 				// deltas and MIS for non-deltas
 
 				// do MIS
-				if(!radianceLe.isZero() && surfaceBehavior->getOptics()->getAllPhenomena().hasNone({
-					ESurfacePhenomenon::DELTA_REFLECTION, ESurfacePhenomenon::DELTA_TRANSMISSION}))
+				if(canDoMis && !radianceLe.isZero())
 				{
-					// TODO: <directLightPdfW> might be 0, should we stop  using MIS if one of two 
+					// TODO: <directLightPdfW> might be 0, should we stop using MIS if one of two 
 					// sampling techniques has failed?
 					// <bsdfSamplePdfW> can also be 0 for delta distributions
 					const real directLightPdfW = TDirectLightEstimator<ESaPolicy::STRICT>(&scene).samplePdfWUnoccluded(

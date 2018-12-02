@@ -26,3 +26,17 @@ public:
 };
 
 }// end namespace ph
+
+/*
+	<SDL_interface>
+
+	<category>  material </category>
+	<type_name> material </type_name>
+
+	<name> Material </name>
+	<description>
+		Defines and models the appearance of scene elements.
+	</description>
+
+	</SDL_interface>
+*/
