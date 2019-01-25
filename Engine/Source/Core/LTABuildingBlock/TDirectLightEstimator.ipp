@@ -36,12 +36,12 @@ inline bool TDirectLightEstimator<POLICY>::sample(
 	real* const             out_pdfW,
 	SpectralStrength* const out_emittedRadiance)
 {
-	const PrimitiveMetadata* metadata = targetPos.getDetail().getPrimitive()->getMetadata();
+	/*const PrimitiveMetadata* metadata = targetPos.getDetail().getPrimitive()->getMetadata();
 	const SurfaceOptics* optics = metadata->getSurface().getOptics();
 	if(optics->getAllPhenomena().hasAtLeastOne({ESurfacePhenomenon::DELTA_REFLECTION, ESurfacePhenomenon::DELTA_TRANSMISSION}))
 	{
 		return false;
-	}
+	}*/
 
 	DirectLightSample directLightSample;
 	directLightSample.setDirectSample(targetPos.getPosition());
@@ -78,6 +78,7 @@ inline real TDirectLightEstimator<POLICY>::samplePdfWUnoccluded(
 	const SurfaceHit& Xe,
 	const Time&       time)
 {
+	// FIXME: redundant pointers
 	const Primitive* const emissivePrimitive = Xe.getDetail().getPrimitive();
 	const Emitter* const   emitter           = emissivePrimitive->getMetadata()->getSurface().getEmitter();
 	PH_ASSERT(emitter);

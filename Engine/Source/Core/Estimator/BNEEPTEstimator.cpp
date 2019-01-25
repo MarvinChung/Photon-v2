@@ -93,7 +93,16 @@ void BNEEPTEstimator::radianceAlongRay(
 	//
 	for(uint32 numBounces = 0; numBounces < MAX_RAY_BOUNCES; numBounces++)
 	{
-		bool canDoMis = false;
+		// FIXME: too hacky
+		bool canDoNEE = true;
+		{
+			const PrimitiveMetadata* me = surfaceHit.getDetail().getPrimitive()->getMetadata();
+			const SurfaceOptics* op = me->getSurface().getOptics();
+			if(op->getAllPhenomena().hasAtLeastOne({ESurfacePhenomenon::DELTA_REFLECTION, ESurfacePhenomenon::DELTA_TRANSMISSION}))
+			{
+				canDoNEE = false;
+			}
+		}
 
 		// direct light sample
 		{
@@ -101,11 +110,9 @@ void BNEEPTEstimator::radianceAlongRay(
 			real             directPdfW;
 			SpectralStrength emittedRadiance;
 
-			canDoMis = TDirectLightEstimator<ESaPolicy::STRICT>(&scene).sample(
+			if(canDoNEE && TDirectLightEstimator<ESaPolicy::STRICT>(&scene).sample(
 				surfaceHit, ray.getTime(),
-				&L, &directPdfW, &emittedRadiance);
-
-			if(canDoMis)
+				&L, &directPdfW, &emittedRadiance))
 			{
 				const PrimitiveMetadata* metadata        = surfaceHit.getDetail().getPrimitive()->getMetadata();
 				const SurfaceBehavior&   surfaceBehavior = metadata->getSurface();
@@ -153,8 +160,8 @@ void BNEEPTEstimator::radianceAlongRay(
 
 			// blackness check & sidedness agreement between real geometry and shading normal
 			//
-			if(!bsdfSample.outputs.isGood() ||
-				surfaceHit.getGeometryNormal().dot(L) * surfaceHit.getShadingNormal().dot(L) <= 0.0_r)
+			if(!bsdfSample.outputs.isMeasurable() ||
+			   surfaceHit.getGeometryNormal().dot(L) * surfaceHit.getShadingNormal().dot(L) <= 0.0_r)
 			{
 				break;
 			}
@@ -204,7 +211,7 @@ void BNEEPTEstimator::radianceAlongRay(
 				// deltas and MIS for non-deltas
 
 				// do MIS
-				if(canDoMis && !radianceLe.isZero())
+				if(canDoNEE && !radianceLe.isZero())
 				{
 					// TODO: <directLightPdfW> might be 0, should we stop using MIS if one of two 
 					// sampling techniques has failed?
@@ -217,17 +224,19 @@ void BNEEPTEstimator::radianceAlongRay(
 					surfaceBehavior->getOptics()->calcBsdfSamplePdfW(bsdfPdfQuery);
 
 					const real bsdfSamplePdfW = bsdfPdfQuery.outputs.sampleDirPdfW;
+					if(bsdfSamplePdfW > 0)
+					{
+						const real misWeighting = mis.weight(bsdfSamplePdfW, directLightPdfW);
 
-					const real misWeighting = mis.weight(bsdfSamplePdfW, directLightPdfW);
+						SpectralStrength weight = bsdfSample.outputs.pdfAppliedBsdf.mul(N.absDot(L));
+						weight.mulLocal(accuLiWeight).mulLocal(misWeighting);
 
-					SpectralStrength weight = bsdfSample.outputs.pdfAppliedBsdf.mul(N.absDot(L));
-					weight.mulLocal(accuLiWeight).mulLocal(misWeighting);
+						// avoid excessive, negative weight and possible NaNs
+						//
+						rationalClamp(weight);
 
-					// avoid excessive, negative weight and possible NaNs
-					//
-					rationalClamp(weight);
-
-					accuRadiance.addLocal(radianceLe.mulLocal(weight));
+						accuRadiance.addLocal(radianceLe.mulLocal(weight));
+					}
 				}
 				// not do MIS
 				else

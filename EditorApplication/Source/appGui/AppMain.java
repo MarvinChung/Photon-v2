@@ -1,6 +1,16 @@
 package appGui;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.util.List;
+import java.util.zip.GZIPInputStream;
+
+import com.sun.javafx.application.LauncherImpl;
 
 import appModel.EditorApp;
 import javafx.application.Application;
@@ -8,10 +18,27 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import jsdl.SDLCommand;
+import jsdl.SDLVector3;
+import minecraft.EFacing;
+import minecraft.FaceReachability;
+import minecraft.JSONObject;
+import minecraft.MinecraftWorld;
+import minecraft.ModelData;
+import minecraft.RegionData;
+import minecraft.Terrain;
+import minecraft.nbt.NBTData;
+import minecraft.parser.JSONParser;
+import minecraft.parser.MCAParser;
+import minecraft.parser.ModelParser;
+import minecraft.parser.NBTParser;
+import sun.misc.IOUtils;
+import util.SDLConsole;
+import util.Vector3f;
 
 public class AppMain extends Application
 {
-	private static final EditorApp editorApp = new EditorApp();
+	private EditorApp m_editorApp;
 	
 //	private static final OutputStream consoleOutputStream = new OutputStream()
 //	{
@@ -38,13 +65,60 @@ public class AppMain extends Application
 	
 	public static void main(String[] args)
 	{
-		Application.launch(args);
+		//Application.launch(args);
+		
+		// FIXME: use the standard way
+		LauncherImpl.launchApplication(AppMain.class, AppPreloader.class, args);
+	}
+	
+	@Override
+	public void init() throws Exception
+	{
+		m_editorApp = new EditorApp();
+		
+		// DEBUG
+		
+//		EFacing f = EFacing.UP;
+//		FaceReachability reachability = new FaceReachability();
+//		System.err.println(reachability);
+//		reachability.setReachability(EFacing.DOWN, f, true);
+//		System.err.println(reachability);
+//		reachability.setReachability(EFacing.DOWN, f, false);
+//		System.err.println(reachability);
+		
+//		MCAParser parser = new MCAParser();
+////		RegionData region = parser.parse(new File("./r.1.2.mca"));
+//		RegionData region = parser.parse(new File("./r.0.0.mca"));
+////		RegionData region = parser.parse(new File("./r.0.-1.mca"));
+//		
+//		Terrain terrain = new Terrain();
+//		terrain.addRegion(region);
+//		
+//		MinecraftWorld mcWorld = new MinecraftWorld();
+//		mcWorld.setTerrain(terrain);
+//		
+//		mcWorld.setViewpoint(new Vector3f(60, 15, 240));
+//		mcWorld.setViewDirection(new Vector3f(1, -0.5f, 3));
+////		mcWorld.setViewpoint(new Vector3f(0, 100, 0));
+////		mcWorld.setViewDirection(new Vector3f(1, -0.4f, 1));
+//		mcWorld.setFovDegrees(70.0f);
+//		
+//		SDLConsole console = new SDLConsole("mcw_export");
+//		console.start();
+//		mcWorld.toSDL(console);
+//		console.exit();
+		
+//		ModelParser modelParser = new ModelParser();
+//		ModelData modelData = modelParser.parse(new FileInputStream("./birch_log.json"));
+//		System.out.println(modelData);
+		
+//		System.exit(0);
 	}
 
 	@Override
 	public void start(Stage primaryStage) throws Exception
 	{
-		editorApp.create();
+		m_editorApp.create();
 		
 //		System.setOut(new PrintStream(consoleOutputStream, true));
 //		System.setErr(new PrintStream(consoleOutputStream, true));
@@ -54,11 +128,11 @@ public class AppMain extends Application
 		Parent      appMainView = fxmlLoader.load();
 		AppMainCtrl appMainCtrl = fxmlLoader.getController();
 		
-		appMainCtrl.setEditorApp(editorApp);
+		appMainCtrl.setEditorApp(m_editorApp);
 		appMainCtrl.createNewProject("(default project)");
 		appMainCtrl.setWorkbenchAsEditorView();
 		
-		Scene scene = new Scene(appMainView, 1280,	680);
+		Scene scene = new Scene(appMainView, 1280, 680);
 		
 		// Overrides this attribute to a dark color to get a dark theme.
 		// (many colors in default .css are dependent on this attribute)
@@ -77,6 +151,6 @@ public class AppMain extends Application
 		System.setOut(originalOut);
 		System.setErr(originalErr);
 		
-		editorApp.decompose();
+		m_editorApp.decompose();
 	}
 }
