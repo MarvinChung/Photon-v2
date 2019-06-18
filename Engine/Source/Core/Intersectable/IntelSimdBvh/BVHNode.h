@@ -173,7 +173,7 @@ template<typename Index, bool USE_SINGLE_ITEM_OPT>
 inline auto BVHNode<Index, USE_SINGLE_ITEM_OPT>::
 	isEmpty() const -> bool
 {
-	return (index == -1);
+	return (index() == -1);
 }
 
 template<typename Index, bool USE_SINGLE_ITEM_OPT>

@@ -8,6 +8,7 @@
 #include "Common/Logger.h"
 #include "Core/Intersectable/IntelSimdBvh/QBVH.h"
 #include "Utility/Timer.h"
+#include "Core/Intersectable/PTriangle.h"
 
 #include <iostream>
 
@@ -69,7 +70,7 @@ void GTriangleMesh::genPrimitive(
 		Timer timer;
 		timer.start();
 
-		std::vector<GTriangle> items;
+		std::vector<PTriangle> items;
 		for(const auto& gTriangle : m_gTriangles)
 		{
 			// FIXME: leak
@@ -84,9 +85,15 @@ void GTriangleMesh::genPrimitive(
 			// 	gTriangle.getVc().x,
 			// 	gTriangle.getVc().y,
 			// 	gTriangle.getVc().z);
-
+			PTriangle p(data.metadata, Vector3R(0,0,0), Vector3R(0,0,0), Vector3R(0,0,0));
+			p.setNa(gTriangle.getVa());
+			p.setNb(gTriangle.getVb());
+			p.setNc(gTriangle.getVc());
+			p.setUVWa(gTriangle.getUVWa());
+			p.setUVWb(gTriangle.getUVWb());
+			p.setUVWc(gTriangle.getUVWc());
 			// triangles.tris.push_back(triangle);
-			items.push_back(gTriangle);
+			items.push_back(p);
 		}
 
 		// QBVH(
@@ -95,8 +102,8 @@ void GTriangleMesh::genPrimitive(
 		// 	float emptyBonus,
 		// 	std::size_t maxNodeItems);
 
-		auto qbvh = std::make_unique<QBVH<GTriangle, unsigned int>>(10, 10, 10.0f, 64);
-		qbvh.get()->buildQBVH(items);
+		auto qbvh = std::make_unique<QBVH<PTriangle, unsigned int>>(10, 10, 10.0f, 64);
+		qbvh.get()->buildQBVH(std::move(items));
 		//out_primitives.push_back(std::move(qbvh));
 
 		timer.finish();

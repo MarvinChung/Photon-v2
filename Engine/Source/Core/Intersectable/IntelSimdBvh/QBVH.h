@@ -60,7 +60,7 @@ public:
     );
 
     void buildQBVH(
-        std::vector<Item>& items
+        std::vector<Item>&& items
     );
 
 
@@ -136,7 +136,7 @@ inline std::unique_ptr<BVH<Item, Index>> QBVH<Item, Index>::buildBVH(
     
 template<typename Item, typename Index>
 inline void QBVH<Item, Index>::buildQBVH(
-    std::vector<Item>& items
+    std::vector<Item>&& items
 )
 {
     std::unique_ptr<BVH<Item, Index>> bvh = buildBVH(items);
