@@ -5,11 +5,21 @@
 #include "Actor/Geometry/PrimitiveBuildingMaterial.h"
 #include "FileIO/SDL/InputPacket.h"
 #include "Actor/Geometry/GeometrySoup.h"
+#include "Common/Logger.h"
+#include "Core/Intersectable/IntelSimdBvh/QBVH.h"
+#include "Utility/Timer.h"
 
 #include <iostream>
 
+#define SIMD 1
+
 namespace ph
 {
+
+namespace
+{
+	const Logger logger(LogSender("Triangle Mesh"));
+}
 
 GTriangleMesh::GTriangleMesh() : 
 	Geometry(), 
@@ -52,9 +62,54 @@ void GTriangleMesh::genPrimitive(
 	const PrimitiveBuildingMaterial& data,
 	std::vector<std::unique_ptr<Primitive>>& out_primitives) const
 {
-	for(const auto& gTriangle : m_gTriangles)
+	if(SIMD)
 	{
-		gTriangle.genPrimitive(data, out_primitives);
+		logger.log("start building qbvh...");
+
+		Timer timer;
+		timer.start();
+
+		std::vector<GTriangle> items;
+		for(const auto& gTriangle : m_gTriangles)
+		{
+			// FIXME: leak
+			// Triangle* triangle = new Triangle();
+			// triangle->setTvertices(
+			// 	gTriangle.getVa().x, 
+			// 	gTriangle.getVa().y,
+			// 	gTriangle.getVa().z,
+			// 	gTriangle.getVb().x,
+			// 	gTriangle.getVb().y,
+			// 	gTriangle.getVb().z, 
+			// 	gTriangle.getVc().x,
+			// 	gTriangle.getVc().y,
+			// 	gTriangle.getVc().z);
+
+			// triangles.tris.push_back(triangle);
+			items.push_back(gTriangle);
+		}
+
+		// QBVH(
+		// 	int traversalCost, 
+		// 	int intersectionCost,
+		// 	float emptyBonus,
+		// 	std::size_t maxNodeItems);
+
+		auto qbvh = std::make_unique<QBVH<GTriangle, unsigned int>>(10, 10, 10.0f, 64);
+		qbvh.get()->buildQBVH(items);
+		//out_primitives.push_back(std::move(qbvh));
+
+		timer.finish();
+
+		logger.log("QBVH build time: " + std::to_string(timer.getDeltaMs()) + " ms");
+	}
+	else
+	{
+		
+		for(const auto& gTriangle : m_gTriangles)
+		{
+			gTriangle.genPrimitive(data, out_primitives);
+		}
 	}
 }
 

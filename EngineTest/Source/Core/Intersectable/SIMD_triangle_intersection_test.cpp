@@ -1,31 +1,42 @@
-#include <Core/Intersectable/triangle_SIMD_Bvh/SIMD_triangle_intersection.h>
+#include <Core/Intersectable/IntelSimdBvh/SimdTriangleIntersection.h>
+// #define SIMDPP_ARCH_X86_SSE3
+// #define SIMDPP_EMIT_DISPATCHER 1
+// //#define SIMDPP_DISPATCH_ARCH1 SIMDPP_ARCH_X86_SSE2 
+// #define SIMDPP_DISPATCH_ARCH1 SIMDPP_ARCH_X86_SSE3 
+// #define SIMDPP_DISPATCH_ARCH2 SIMDPP_ARCH_X86_SSE4_1 
+// #define SIMDPP_DISPATCH_ARCH3 SIMDPP_ARCH_X86_AVX
+// #define SIMDPP_DISPATCH_ARCH4 SIMDPP_ARCH_X86_AVX2
+
 #include <Core/Ray.h>
 #include <Math/TVector3.h>
 
 #include <gtest/gtest.h>
+//#include "simdpp/simd.h"
+// #include <simdpp/dispatch/get_arch_gcc_builtin_cpu_supports.h>
+// #include <simdpp/dispatch/get_arch_raw_cpuid.h>
+// #include <simdpp/dispatch/get_arch_linux_cpuinfo.h>
+
+// #if SIMDPP_HAS_GET_ARCH_RAW_CPUID
+// #define SIMDPP_USER_ARCH_INFO ::simdpp::get_arch_raw_cpuid()
+// #elif SIMDPP_HAS_GET_ARCH_GCC_BUILTIN_CPU_SUPPORTS
+// #define SIMDPP_USER_ARCH_INFO ::simdpp::get_arch_gcc_builtin_cpu_supports()
+// #elif SIMDPP_HAS_GET_ARCH_LINUX_CPUINFO
+// #define SIMDPP_USER_ARCH_INFO ::simdpp::get_arch_linux_cpuinfo()
+// #else
+// #error "Unsupported platform"
+// #endif
 
 
-#if SIMDPP_HAS_GET_ARCH_RAW_CPUID
-#define SIMDPP_USER_ARCH_INFO ::simdpp::get_arch_raw_cpuid()
-#elif SIMDPP_HAS_GET_ARCH_GCC_BUILTIN_CPU_SUPPORTS
-#define SIMDPP_USER_ARCH_INFO ::simdpp::get_arch_gcc_builtin_cpu_supports()
-#elif SIMDPP_HAS_GET_ARCH_LINUX_CPUINFO
-#define SIMDPP_USER_ARCH_INFO ::simdpp::get_arch_linux_cpuinfo()
-#else
-#error "Unsupported platform"
-#endif
+// namespace SIMDPP_ARCH_NAMESPACE {
 
+// void print_arch()
+// {
+// 	std::cout << static_cast<unsigned>(simdpp::this_compile_arch()) << '\n';
+// }
 
-namespace SIMDPP_ARCH_NAMESPACE {
+// } // namespace SIMDPP_ARCH_NAMESPACE
 
-void print_arch()
-{
-	std::cout << static_cast<unsigned>(simdpp::this_compile_arch()) << '\n';
-}
-
-} // namespace SIMDPP_ARCH_NAMESPACE
-
-SIMDPP_MAKE_DISPATCHER_VOID0(print_arch);
+//SIMDPP_MAKE_DISPATCHER_VOID0(print_arch);
 
 TEST(RayWithPackedTriangleTest, HitReturnIsCorrect)
 {
@@ -78,20 +89,20 @@ TEST(RayWithPackedTriangleTest, HitReturnIsCorrect)
 
 	// std::cout << "end tris" << std::endl;
 	//normal test
-	tri.e1[0] = simdpp::make_float(v1[0].x-v0[0].x, v1[1].x-v0[1].x, v1[2].x-v0[2].x, v1[3].x-v0[3].x, v1[4].x-v0[4].x, v1[5].x-v0[5].x, v1[6].x-v0[6].x, v1[7].x-v0[7].x);
-	tri.e1[1] = simdpp::make_float(v1[0].y-v0[0].y, v1[1].y-v0[1].y, v1[2].y-v0[2].y, v1[3].y-v0[3].y, v1[4].y-v0[4].y, v1[5].y-v0[5].y, v1[6].y-v0[6].y, v1[7].y-v0[7].y);
-	tri.e1[2] = simdpp::make_float(v1[0].z-v0[0].z, v1[1].z-v0[1].z, v1[2].z-v0[2].z, v1[3].z-v0[3].z, v1[4].z-v0[4].z, v1[5].z-v0[5].z, v1[6].z-v0[6].z, v1[7].z-v0[7].z);
+	tri.e1[0] = _mm_set_ps(v1[0].x-v0[0].x, v1[1].x-v0[1].x, v1[2].x-v0[2].x, v1[3].x-v0[3].x);
+	tri.e1[1] = _mm_set_ps(v1[0].y-v0[0].y, v1[1].y-v0[1].y, v1[2].y-v0[2].y, v1[3].y-v0[3].y);
+	tri.e1[2] = _mm_set_ps(v1[0].z-v0[0].z, v1[1].z-v0[1].z, v1[2].z-v0[2].z, v1[3].z-v0[3].z);
 	
-	tri.e2[0] = simdpp::make_float(v2[0].x-v0[0].x, v2[1].x-v0[1].x, v2[2].x-v0[2].x, v2[3].x-v0[3].x, v2[4].x-v0[4].x, v2[5].x-v0[5].x, v2[6].x-v0[6].x, v2[7].x-v0[7].x);
-	tri.e2[1] = simdpp::make_float(v2[0].y-v0[0].y, v2[1].y-v0[1].y, v2[2].y-v0[2].y, v2[3].y-v0[3].y, v2[4].y-v0[4].y, v2[5].y-v0[5].y, v2[6].y-v0[6].y, v2[7].y-v0[7].y);
-	tri.e2[2] = simdpp::make_float(v2[0].z-v0[0].z, v2[1].z-v0[1].z, v2[2].z-v0[2].z, v2[3].z-v0[3].z, v2[4].z-v0[4].z, v2[5].z-v0[5].z, v2[6].z-v0[6].z, v2[7].z-v0[7].z);
+	tri.e2[0] = _mm_set_ps(v2[0].x-v0[0].x, v2[1].x-v0[1].x, v2[2].x-v0[2].x, v2[3].x-v0[3].x);
+	tri.e2[1] = _mm_set_ps(v2[0].y-v0[0].y, v2[1].y-v0[1].y, v2[2].y-v0[2].y, v2[3].y-v0[3].y);
+	tri.e2[2] = _mm_set_ps(v2[0].z-v0[0].z, v2[1].z-v0[1].z, v2[2].z-v0[2].z, v2[3].z-v0[3].z);
 
-	tri.v0[0] = simdpp::make_float(v0[0].x, v0[1].x, v0[2].x, v0[3].x, v0[4].x, v0[5].x, v0[6].x, v0[7].x);
-	tri.v0[1] = simdpp::make_float(v0[0].y, v0[1].y, v0[2].y, v0[3].y, v0[4].y, v0[5].y, v0[6].y, v0[7].y);
-	tri.v0[2] = simdpp::make_float(v0[0].z, v0[1].z, v0[2].z, v0[3].z, v0[4].z, v0[5].z, v0[6].z, v0[7].z);
+	tri.v0[0] = _mm_set_ps(v0[0].x, v0[1].x, v0[2].x, v0[3].x);
+	tri.v0[1] = _mm_set_ps(v0[0].y, v0[1].y, v0[2].y, v0[3].y);
+	tri.v0[2] = _mm_set_ps(v0[0].z, v0[1].z, v0[2].z, v0[3].z);
 
-	simdpp::float32<width> all_zero = simdpp::splat(0.0f);
-	tri.inactiveMask = simdpp::to_mask(all_zero);
+	__m128 all_zero = _mm_set_ps1(0.0f);
+	tri.inactiveMask = all_zero;
 	testRay ray(r);
 	EXPECT_EQ(ray.isIntersectPackedTriangle(tri, results), true);
 	EXPECT_EQ(results.idx, 0);
@@ -128,11 +139,11 @@ TEST(RayWithPackedTriangleTest, HitReturnIsCorrect)
 		normaltri[i].setVertex(Vector3R(r1, r2, r3), Vector3R(r4, r5, r6), Vector3R(r7 ,r8, r9));
 	}
 
-	//testTriangle temp[8];
-	testTriangle temp[8];
-	for(int i = 0 ;i < 200/8 ;i ++)
+
+	testTriangle temp[SIMD_VECTOR_WIDTH];
+	for(int i = 0 ;i < 200/SIMD_VECTOR_WIDTH ;i ++)
 	{
-		for(int j = 0; j < 8; j ++)
+		for(int j = 0; j < SIMD_VECTOR_WIDTH; j ++)
 		{
 			r1 = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/X));
 			r2 = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/X));
@@ -156,7 +167,7 @@ TEST(RayWithPackedTriangleTest, HitReturnIsCorrect)
 	PackedIntersectionResult tp_results;
 	clock_t  begin = clock();
 
-	for(int i = 0; i < X/1600; i++)
+	for(int i = 0; i < X/(200 * SIMD_VECTOR_WIDTH); i++)
 	{
 		for(int j = 0 ; j < 200 ; j++ )
 		{
@@ -198,7 +209,7 @@ TEST(RayWithPackedTriangleTest, HitReturnIsCorrect)
 
 
 
-	print_arch();
+	//print_arch();
 	
 }
 
