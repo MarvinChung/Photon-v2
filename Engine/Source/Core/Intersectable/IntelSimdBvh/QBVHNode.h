@@ -4,6 +4,7 @@
 #include "Core/Intersectable/IntelSimdBvh/BVHNode.h"
 #include "Core/Intersectable/IntelSimdBvh/SimdWidth.h"
 #include "Common/primitive_type.h"
+#include "Core/Ray.h"
 
 #include <iostream>
 #include "Math/constant.h"
@@ -23,13 +24,15 @@ class QBVHNode
         //top axis, left axis , right axis
         int m_axis[3];
         int m_fill;
-        bool isIntersecting(const __m128 bboxes[2][3],
-                            const __m128 ray_origin[3],
+        bool isIntersecting(const __m128 ray_origin[3],
                             const __m128 idir[3],
                             const int sign[3],
                             __m128 tmin,
-                            __m128 tmax);
+                            __m128 tmax) const;
+        bool isIntersecting(const Ray& ray, HitProbe& probe) const; 
+        bool isIntersectingVolumeConservative(const AABB3D& volume) const; 
         QBVHNode makeNode(std::vector< std::vector<BVHNode<Index>> >& currentCollapseBVHInfo, const int begin, const int end);
+
 
         
 };
@@ -45,32 +48,54 @@ class QBVHNode
 // bool KDNode::isIntersectingVolumeConservative(const AABB3D& volume) const {
 //     return true;
 // }
+template<typename Index>
+inline bool QBVHNode<Index>::isIntersectingVolumeConservative(const AABB3D& volume) const {
+    return true;
+}
+
+template<typename Index>
+inline bool QBVHNode<Index>::isIntersecting(const Ray& ray, HitProbe& probe) const {
+    __m128 ray_origin[3]; 
+    ray_origin[0] = _mm_set_ps1(ray.getOrigin().x);
+    ray_origin[1] = _mm_set_ps1(ray.getOrigin().y);
+    ray_origin[2] = _mm_set_ps1(ray.getOrigin().z);
+    __m128 idir[3];
+    idir[0] = _mm_set_ps1(std::abs(1/ray.getDirection().x));
+    idir[1] = _mm_set_ps1(std::abs(1/ray.getDirection().y));
+    idir[2] = _mm_set_ps1(std::abs(1/ray.getDirection().z));
+    int sign[3];
+    sign[0] = (std::signbit(ray.getDirection().x))?1:0;
+    sign[1] = (std::signbit(ray.getDirection().y))?1:0;
+    sign[2] = (std::signbit(ray.getDirection().z))?1:0;
+    __m128 tmin = _mm_set_ps1(ray.getMinT());
+    __m128 tmax = _mm_set_ps1(ray.getMaxT());
+    this->isIntersecting(ray_origin, idir, sign, tmin ,tmax);
+} 
   
 template<typename Index>
 inline bool QBVHNode<Index>::isIntersecting(
-    const __m128 bboxes[2][3],
-    const __m128 ray_origin[3],
-    const __m128 idir[3],
-    const int sign[3],
+    const __m128 ray_origin[3], //ray origin
+    const __m128 idir[3], //ray inveresed direction
+    const int sign[3], //ray xyz direction -> +:0,-:1
     __m128 tmin,
     __m128 tmax
 
-)
+) const
 {   
     //TODO
     //read ifconstexpr
 
     //x coordinate
-    tmin = _mm_max_ps( tmin, _mm_mul_ps(_mm_sub_ps( bboxes[ sign[0] ][0], ray_origin[0]) , idir[0]) );
-    tmax = _mm_min_ps( tmax, _mm_mul_ps(_mm_sub_ps( bboxes[ 1 - sign[0] ][0], ray_origin[0]) , idir[0]) );
+    tmin = _mm_max_ps( tmin, _mm_mul_ps(_mm_sub_ps( m_bboxes[ sign[0] ][0], ray_origin[0]) , idir[0]) );
+    tmax = _mm_min_ps( tmax, _mm_mul_ps(_mm_sub_ps( m_bboxes[ 1 - sign[0] ][0], ray_origin[0]) , idir[0]) );
 
     //y cooridinate
-    tmin = _mm_max_ps( tmin, _mm_mul_ps(_mm_sub_ps( bboxes[ sign[1] ][1], ray_origin[1]) , idir[1]) );
-    tmax = _mm_min_ps( tmax, _mm_mul_ps(_mm_sub_ps( bboxes[ 1 - sign[1] ][1], ray_origin[1]) , idir[1]) );
+    tmin = _mm_max_ps( tmin, _mm_mul_ps(_mm_sub_ps( m_bboxes[ sign[1] ][1], ray_origin[1]) , idir[1]) );
+    tmax = _mm_min_ps( tmax, _mm_mul_ps(_mm_sub_ps( m_bboxes[ 1 - sign[1] ][1], ray_origin[1]) , idir[1]) );
 
     //z coordinate
-    tmin = _mm_max_ps( tmin, _mm_mul_ps(_mm_sub_ps( bboxes[ sign[2] ][2], ray_origin[2]) , idir[2]) );
-    tmax = _mm_min_ps( tmax, _mm_mul_ps(_mm_sub_ps( bboxes[ 1 - sign[2] ][2], ray_origin[2]) , idir[2]) );
+    tmin = _mm_max_ps( tmin, _mm_mul_ps(_mm_sub_ps( m_bboxes[ sign[2] ][2], ray_origin[2]) , idir[2]) );
+    tmax = _mm_min_ps( tmax, _mm_mul_ps(_mm_sub_ps( m_bboxes[ 1 - sign[2] ][2], ray_origin[2]) , idir[2]) );
 
     return _mm_movemask_ps(_mm_cmpge_ps(tmax, tmin));
 }  

@@ -1,8 +1,10 @@
-
 # Photon-v2 unit tests for engine.
 
 file(GLOB_RECURSE SOURCE_FILES "./Source/*.cpp")
-add_executable(EngineTest ${SOURCE_FILES})
+#simdpp_get_runnable_archs(RUNNABLE_ARCHS)
+#simdpp_multiarch(GEN_ARCH_FILES ./Source/Core/Intersectable/SIMD_triangle_intersection_test.cpp ${RUNNABLE_ARCHS})
+
+add_executable(EngineTest ${SOURCE_FILES} ${GEN_ARCH_FILES})
 
 add_dependencies(EngineTest Engine)
 
@@ -23,6 +25,7 @@ if(MSVC)
     	LINK_FLAGS /DEBUG
     )
 endif()
+
 
 #add_custom_command(TARGET EngineTest
 #	POST_BUILD

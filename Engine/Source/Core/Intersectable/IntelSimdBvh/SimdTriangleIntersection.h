@@ -1,4 +1,6 @@
 #pragma once
+#ifndef SIMD_TRIANGLE_INTERSECT
+#define SIMD_TRIANGLE_INTERSECT
 #include "Core/Intersectable/IntelSimdBvh/SimdWidth.h"
 
 // #include "Core/Intersectable/PTriangle.h"
@@ -238,7 +240,7 @@ testRay::testRay(const Ray& r)
 
 
 }
-
+#endif
 
 //SIMDPP_MAKE_DISPATCHER(template <typename T> void avx_multi_cross());
 
